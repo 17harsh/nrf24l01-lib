@@ -16,3 +16,7 @@ Version V1
 * Use three files that is nrf24l01.h, SPI.h and nrf_mnemonics.h in root directory of project (where there is main.c) to use this library
 * Supports all features but tested only for 1 Byte data only
 * Don't forget to add #include "nrf24l01.h" in your main.c in order to use this library.
+
+Version V1.01 (10-12-2017)
+
+* Minor Bug fixes and code optimization.
