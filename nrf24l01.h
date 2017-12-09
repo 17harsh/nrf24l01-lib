@@ -1,9 +1,14 @@
 /*
- * nrf24l01.h
- *
- * Created: 07-11-2017 14:49:09
- *  Author: harsh
- */ 
+   * nrf24l01.h
+   *
+ - * Copyright (C) 2017 by Harsh Singhal.
+ - * Modification or use of this software in source or binary form
+ - * is permitted as long as files maintain this copyright.
+ - * This is completely for educational purposes and not for commercial use.
+ - *
+   * Created: 07-11-2017 14:49:09
+ - * Author: Harsh Singhal
+ - */
 
 
 #ifndef NRF24L01_H_
