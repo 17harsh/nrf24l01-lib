@@ -20,3 +20,7 @@ Version V1
 Version V1.01 (10-12-2017)
 
 * Minor Bug fixes and code optimization.
+
+Version V1.02 (21-2-2018)
+
+* Minor Bug fixes and code optimization.

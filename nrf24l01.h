@@ -43,7 +43,7 @@
 
 
 /*NRF AUTO Acknowledgment (Enhanced ShockBurst)*/
-#define ENAA_Px				0			// 1: enable auto ack on all data pipes
+#define ENAA_Px				1			// 1: enable auto ack on all data pipes
 										// 0: disables auto ack on all data pipes
 										
 /*NRF Enable data pipe (Enable Rx addresses)*/
@@ -66,7 +66,7 @@
 
 /*RF Setup Register*/
 #define CONT_WAVE			0			//Enables continuous carrier transmit when high
-#define RF_DR_LOW			0			//Set RF data rate to 250kbps. Used in combination with RD_DR_HIGH
+#define RF_DR_LOW			0		//Set RF data rate to 250kbps. Used in combination with RD_DR_HIGH
 #define PLL_LOCK			0			//Force PLL lock signal. Only used in test
 #define RF_DR_HIGH			0			//2Mbps and 1Mbps setting. Used in combination with RD_DR_LOW
 #define RF_PWR				3			//Set RF Output Power in TX mode
@@ -407,16 +407,16 @@ void rx_add(){
 	Address[4] = (unsigned char) ((0xFF00000000 & Data_Pipe1)>>32);
 	write_nrf(RX_ADDR_P1,Address,Byte_size);
 	
-	Address[0] = (unsigned char) (0x00000000FF & Data_Pipe2);
+	Address[0] = Data_Pipe2;
 	write_nrf(RX_ADDR_P2,Address,1);
 	
-	Address[0] = (unsigned char) (0x00000000FF & Data_Pipe3);
+	Address[0] = Data_Pipe3;
 	write_nrf(RX_ADDR_P3,Address,1);
 	
-	Address[0] = (unsigned char) (0x00000000FF & Data_Pipe4);
+	Address[0] = Data_Pipe4;
 	write_nrf(RX_ADDR_P4,Address,1);
 	
-	Address[0] = (unsigned char) (0x00000000FF & Data_Pipe5);
+	Address[0] = Data_Pipe5;
 	write_nrf(RX_ADDR_P5,Address,1);
 }
 void tx_add(){
@@ -463,10 +463,10 @@ void feature(){
 	write_nrf(FEATURE,feat,1);
 }
 static unsigned char *read_nrf(unsigned char Register, unsigned char Byte_size){
-	_delay_us(1);
-	if(Register <= 0x1D){
-		Register =  Register + R_REGISTER;
-	}
+	//_delay_us(1);
+	//if(Register <= 0x1D){
+	//	Register =  Register + R_REGISTER;
+	//}
 	static unsigned char ret[32];
 	
 	if(Register == STATUS){
@@ -485,7 +485,7 @@ static unsigned char *read_nrf(unsigned char Register, unsigned char Byte_size){
 	return ret;
 }
 void write_nrf(unsigned char Register,unsigned char *data, unsigned char Byte_size){
-	_delay_us(1);
+	//_delay_us(1);
 	if(Register <= 0x1D){
 		Register = Register + W_REGISTER;
 	}
