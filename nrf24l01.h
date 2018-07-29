@@ -58,15 +58,15 @@
 #define AW					3			// 0 = 00; 1 = 01; 2 = 10; 3 = 11;			
 
 /*Setup of Automatic Retransmission*/
-#define ARD					2			// Auto retransmit delay (refer datasheet for value)
-#define ARC					3			// Auto retransmit Count (refer datasheet for value)
+#define ARD					2			// Auto retransmit delay (refer data sheet for value)
+#define ARC					3			// Auto retransmit Count (refer data sheet for value)
 
 /*Setup RF channel Frequency*/
 #define Frequency			2402ul		//Write in MHz(for eg. 2402MHz or 2.402Ghz)(Can operate form 2.400GHz to 2.525GHz)(Resolution is 1MHz) 
 
 /*RF Setup Register*/
 #define CONT_WAVE			0			//Enables continuous carrier transmit when high
-#define RF_DR_LOW			0		//Set RF data rate to 250kbps. Used in combination with RD_DR_HIGH
+#define RF_DR_LOW			0			//Set RF data rate to 250kbps. Used in combination with RD_DR_HIGH
 #define PLL_LOCK			0			//Force PLL lock signal. Only used in test
 #define RF_DR_HIGH			0			//2Mbps and 1Mbps setting. Used in combination with RD_DR_LOW
 #define RF_PWR				3			//Set RF Output Power in TX mode
@@ -132,14 +132,20 @@ void nrf_config(unsigned char PWR_UP, unsigned char PRIM_RX);
 unsigned char *nrf_transmit(unsigned char *data, unsigned char Byte_size);
 
 /*************************************************************************************************
-* Description : Returns the Received data stored in RX FIFO. Supports ACK with Payload, ACK
-*				WITHOUT Payload and simple transmission without ACK
+* Description : Returns the Received data stored in RX FIFO. Supports ACK and noACK
+* Parameters  : unsigned char Rec_Byte_Size = size of array of received data in RX FIFO
+* Returns     : unsigned char *nrf_receive = array of data that is present in RX FIFO
+**************************************************************************************************/
+unsigned char *nrf_receive(unsigned char Rec_Byte_size);
+
+/*************************************************************************************************
+* Description : Returns the Received data stored in RX FIFO. Supports ACK with Payload
 * Parameters  : unsigned char *data = Array of data in ACK Payload
 *				unsigned char Ack_Byte_Size = size of array of ACK Payload(max 5 bytes)
 *				unsigned char Rec_Byte_Size = size of array of received data in RX FIFO
 * Returns     : unsigned char *nrf_receive = array of data that is present in RX FIFO
 **************************************************************************************************/
-unsigned char *nrf_receive(unsigned char *data, unsigned char Ack_Byte_size, unsigned char Rec_Byte_size);
+unsigned char *nrf_receive_ackpayload(unsigned char *data, unsigned char Ack_Byte_size, unsigned char Rec_Byte_size);
 
 /*************************************************************************************************
 * Description : Returns array of data read from particular register (eg. STATUS, RX FIFO)
@@ -240,7 +246,9 @@ void nrf24l01_init(){
 	feature();
 }
 unsigned char *nrf_transmit(unsigned char *data, unsigned char Byte_size){
-	write_nrf(FLUSH_TX,data,0);
+	char tries = 0;
+	jump: write_nrf(FLUSH_TX,data,0);
+	write_nrf(FLUSH_RX,data,0);
 	unsigned char temp[Byte_size];
 	for (unsigned char i = 0; i < Byte_size; i++){
 		temp[i] = *data;
@@ -286,8 +294,20 @@ unsigned char *nrf_transmit(unsigned char *data, unsigned char Byte_size){
 		//or this :
 		//while (!(Cont_read & (1<<IRQ)));
 		CE_low;
+		unsigned char data1[1];
+		if(temp1[0] & (1<<4)){
+			if(tries > 5){
+				return 0;
+			}
+			else{
+				tries++;
+				data1[0] = 	0x1e;
+				write_nrf(STATUS,data1,1);
+				goto jump;
+			}
+		}
+		//ACK with payload
 		if(temp1[0] & (1<<6)){
-			unsigned char data1[1];
 			if(temp1[0] & (1<<4)){
 				data1[0] = 	0x1e;
 				write_nrf(STATUS,data1,1);
@@ -302,8 +322,8 @@ unsigned char *nrf_transmit(unsigned char *data, unsigned char Byte_size){
 			}
 			return read_nrf(R_RX_PAYLOAD,1);
 		}
+		//ACK without payload
 		else{
-			unsigned char data1[1];
 			if(temp1[0] & (1<<4)){
 				data1[0] = 	0x1e;
 				write_nrf(STATUS,data1,1);
@@ -320,7 +340,41 @@ unsigned char *nrf_transmit(unsigned char *data, unsigned char Byte_size){
 		}
 	}
 }
-unsigned char *nrf_receive(unsigned char *data, unsigned char Ack_Byte_size, unsigned char Rec_Byte_size){
+
+unsigned char *nrf_receive(unsigned char Rec_Byte_size){
+	unsigned char *data;
+	write_nrf(FLUSH_RX,data,0);
+	write_nrf(FLUSH_TX,data,0);
+	
+	unsigned char temp1[1];
+	CE_high;
+	_delay_us(140);									//minimum 130us delay
+	//use this :
+	temp1[0] = *read_nrf(STATUS,0);
+	while (!(temp1[0] & (1<<6))){					//checking status register for change in nrf
+		temp1[0] = *read_nrf(STATUS,0);
+	}
+	//or this :
+	//while (!(Cont_read & (1<<IRQ)));
+	CE_low;
+	unsigned char data1[1];
+	if(temp1[0] & (1<<4)){
+		data1[0] = 	0x1e;
+		write_nrf(STATUS,data1,1);
+	}
+	if(temp1[0] & (1<<5)){
+		data1[0] = 0x2e;
+		write_nrf(STATUS,data1,1);
+	}
+	if(temp1[0] & (1<<6)){
+		data1[0] = 0x4e;
+		write_nrf(STATUS,data1,1);
+	}
+	return read_nrf(R_RX_PAYLOAD,Rec_Byte_size);
+}
+
+unsigned char *nrf_receive_ackpayload(unsigned char *data, unsigned char Ack_Byte_size, unsigned char Rec_Byte_size){
+	write_nrf(FLUSH_RX,data,0);
 	write_nrf(FLUSH_TX,data,0);
 	unsigned char temp[Ack_Byte_size];
 	for (unsigned char i = 0; i < Ack_Byte_size; i++){
@@ -340,6 +394,10 @@ unsigned char *nrf_receive(unsigned char *data, unsigned char Ack_Byte_size, uns
 	//while (!(Cont_read & (1<<IRQ)));
 	CE_low;
 	unsigned char data1[1];
+	if(temp1[0] & (1<<4)){
+		data1[0] = 	0x1e;
+		write_nrf(STATUS,data1,1);
+	}
 	if(temp1[0] & (1<<5)){
 		data1[0] = 0x2e;
 		write_nrf(STATUS,data1,1);
@@ -464,9 +522,6 @@ void feature(){
 }
 static unsigned char *read_nrf(unsigned char Register, unsigned char Byte_size){
 	//_delay_us(1);
-	//if(Register <= 0x1D){
-	//	Register =  Register + R_REGISTER;
-	//}
 	static unsigned char ret[32];
 	
 	if(Register == STATUS){

@@ -24,3 +24,8 @@ Version V1.01 (10-12-2017)
 Version V1.02 (21-2-2018)
 
 * Minor Bug fixes and code optimization.
+
+Version V1.10 (30-7-2018)
+
+* Minor Bug Fixes
+* Separated nrf_receive function (with ACK and without ACK) from nrf_receive_ackpayload function (ACK with payload)
